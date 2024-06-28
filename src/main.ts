@@ -3,6 +3,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
 import { envs } from './config/envs';
+import { RpcCustomExceptionFilter } from './helpers/errors/rpc-custom-exception.filter';
 
 async function bootstrap() {
 
@@ -23,6 +24,9 @@ async function bootstrap() {
       }
     })
   );
+
+  //? Excepciones globales
+  app.useGlobalFilters(new RpcCustomExceptionFilter())
 
   await app.listen(envs.port);
   logger.log(`El Gateway esta corriendo en el puerto ${envs.port}`);

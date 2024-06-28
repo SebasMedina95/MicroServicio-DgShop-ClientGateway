@@ -1,14 +1,18 @@
-import { Body, Controller,
+import { Body, 
+         Controller,
          Delete,
          Get,
          Inject,
          Param,
          Patch,
          Post } from '@nestjs/common';
-import { PRODUCT_SERVICE } from '../../config/services';
-import { ClientProxy } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
+import { catchError, firstValueFrom } from 'rxjs';
 
+import { PRODUCT_SERVICE } from '../../config/services';
 import { PageOptionsDto } from '../../helpers/paginations/dto/page-options.dto';
+import { CreateCategoryDto } from '../../validators/products/categories-dto/create-category.dto';
+import { UpdateCategoryDto } from '../../validators/products/categories-dto/update-category.dto';
 
 @Controller('categories')
 export class CategoriesController {
@@ -19,9 +23,14 @@ export class CategoriesController {
 
   @Post('/create')
   async createCategory(
-    @Body() body: any
+    @Body() createCategoryDto: CreateCategoryDto
   ){
-    return "Creando Categoría";
+    
+    return this.productsClient.send({ cmd: 'create_category' }, createCategoryDto )
+      .pipe(
+        catchError(err => { throw new RpcException(err) })
+      )
+    
   }
 
   @Get('/get-paginated')
@@ -32,28 +41,59 @@ export class CategoriesController {
     //que en este caso fue { cmd: 'get_categories_paginated' }, y el segundo es el Payload, es decir, el cuerpo
     //de la petición para enviar los parámetros
     return this.productsClient.send({ cmd: 'get_categories_paginated' }, pageOptionsDto )
+      .pipe(
+        catchError(err => { throw new RpcException(err) })
+      )
   }
 
   @Get('/get-by-id/:id')
   async getCategoryById(
     @Param('id') id: number
   ){
-    return "Obtener categoría por ID " + id;
+
+    try {
+
+      return this.productsClient.send({ cmd: 'get_category_by_id' }, { 
+        id 
+      }).pipe(
+          catchError(err => { throw new RpcException(err) })
+        )
+
+    } catch (error) {
+
+      throw new RpcException(error);
+
+    } 
+    
   }
 
   @Patch('/update/:id')
   async updateCategory(
     @Param('id') id: number,
-    @Body() body: any
+    @Body() updateCategoryDto: UpdateCategoryDto
   ){
-    return "Actualizar Categoría " + id;
+    
+    return this.productsClient.send({ cmd: 'update_category' }, {
+      id,
+      ...updateCategoryDto
+    }).pipe(
+      catchError(err => { throw new RpcException(err) })
+    )
+    
+    
   }
 
   @Delete('/delete/:id')
   async deleteCategory(
     @Param('id') id: number
   ){
-    return "Eliminar Categoría " + id;
+    
+    return this.productsClient.send({ cmd: 'remove_logic_category' }, {
+      id
+    }).pipe(
+      catchError(err => { throw new RpcException(err) })
+    )
+    
   }
 
 }
