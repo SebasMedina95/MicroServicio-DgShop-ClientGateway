@@ -1,8 +1,10 @@
 import { Body,
          Controller,
+         Delete,
          Get,
          Inject,
          Param,
+         Patch,
          Post,
          UploadedFiles,
          UseInterceptors } from '@nestjs/common';
@@ -12,6 +14,7 @@ import { catchError } from 'rxjs';
 import { PRODUCT_SERVICE } from '../../config/services';
 import { CreateProductDto } from '../../validators/products/products-dto/create-product.dto';
 import { PageOptionsDto } from '../../helpers/paginations/dto/page-options.dto';
+import { UpdateProductDto } from 'src/validators/products/products-dto/update-product.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -71,6 +74,44 @@ export class ProductsController {
       throw new RpcException(error);
 
     } 
+    
+  }
+
+  @Patch('/update/:id')
+  @UseInterceptors(FilesInterceptor('imagesProducts', 10))
+  async updateProduct(
+    @Param('id') id: number,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Body() updateProductDto: UpdateProductDto
+  ){
+
+    //* Si viene imágenes, entonces las anexamos al DTO para enviarlas
+    if (files && files.length > 0){
+      updateProductDto.imagesProducts = files;
+      console.log("Llevo")
+    }else{
+      updateProductDto.imagesProducts = [];
+    }
+
+    return this.productsClient.send({ cmd: 'update_product' }, {
+        id,
+        ...updateProductDto
+      }).pipe(
+        catchError(err => { throw new RpcException(err) })
+      )
+
+  }
+
+  @Delete('/delete/:id')
+  async deleteProvider(
+    @Param('id') id: number
+  ){
+    
+    return this.productsClient.send({ cmd: 'remove_logic_product' }, {
+      id
+    }).pipe(
+      catchError(err => { throw new RpcException(err) })
+    )
     
   }
 
